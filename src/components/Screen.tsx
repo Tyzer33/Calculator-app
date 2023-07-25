@@ -30,11 +30,12 @@ const Placeholder = styled(Display)`
 `
 
 export default function Screen() {
-  const { toDisplay } = useContext(CalculContext) as CalculContextValue
+  const { display } = useContext(CalculContext) as CalculContextValue
+  const isPlaceholder = display.trim() === ''
 
   return (
     <Container>
-      {toDisplay() === undefined ? <Placeholder>0</Placeholder> : <Display>{toDisplay()}</Display>}
+      {isPlaceholder ? <Placeholder>0</Placeholder> : <Display>{display}</Display>}
     </Container>
   )
 }

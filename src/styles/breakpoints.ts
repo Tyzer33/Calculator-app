@@ -1,4 +1,5 @@
-import { css, RuleSet } from 'styled-components'
+import { css } from 'styled-components'
+import { CSS } from '../types/types'
 
 const BREAKPOINTS = {
   TABLET_PORTRAIT: '600px',
@@ -7,9 +8,7 @@ const BREAKPOINTS = {
   BIG_DESKTOP: '1800px',
 }
 
-type Css = RuleSet<object>
-
-export function tabletPortrait(inner: Css) {
+export function tabletPortrait(inner: CSS) {
   return css`
     @media (min-width: ${BREAKPOINTS.TABLET_PORTRAIT}) {
       ${inner};
@@ -17,21 +16,21 @@ export function tabletPortrait(inner: Css) {
   `
 }
 
-export function tabletLandscape(inner: Css) {
+export function tabletLandscape(inner: CSS) {
   return css`
     @media (min-width: ${BREAKPOINTS.TABLET_LANDSCAPE}) {
       ${inner};
     }
   `
 }
-export function desktop(inner: Css) {
+export function desktop(inner: CSS) {
   return css`
     @media (min-width: ${BREAKPOINTS.DESKTOP}) {
       ${inner};
     }
   `
 }
-export function bigDesktop(inner: Css) {
+export function bigDesktop(inner: CSS) {
   return css`
     @media (min-width: ${BREAKPOINTS.BIG_DESKTOP}) {
       ${inner};

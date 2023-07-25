@@ -1,13 +1,7 @@
 import styled, { css } from 'styled-components'
-import { useContext, useState } from 'react'
+import { useContext } from 'react'
 import { CustomThemeContext } from '../context/CustomThemeContext'
-import { CustomThemeContextValue } from '../types/types'
-
-type ButtonPosition = 'left' | 'center' | 'right'
-
-type ContainerProps = {
-  $position: ButtonPosition
-}
+import { CustomThemeContextValue, Theme } from '../types/types'
 
 const Container = styled.div`
   display: grid;
@@ -30,6 +24,10 @@ const Number = styled.div`
   color: ${({ theme }) => theme.headerText};
   font-size: 12px;
 `
+
+type ContainerProps = {
+  $position: Theme
+}
 
 const Button = styled.button<ContainerProps>`
   position: relative;
@@ -59,16 +57,16 @@ const Button = styled.button<ContainerProps>`
 
     ${({ $position }) => {
       switch ($position) {
-        case 'left':
+        case 1:
           return css`
             left: 5px;
           `
-        case 'center':
+        case 2:
           return css`
             left: 50%;
             translate: -62.5%;
           `
-        case 'right':
+        case 3:
           return css`
             right: 5px;
           `
@@ -80,22 +78,7 @@ const Button = styled.button<ContainerProps>`
 `
 
 export default function ThemeSwitchButton() {
-  const { theme, setTheme } = useContext(CustomThemeContext) as CustomThemeContextValue
-  const [buttonPosition, setButtonPosition] = useState<ButtonPosition>('left')
-
-  // TODO: préciser type theme
-  function nextTheme(currentTheme: string) {
-    if (currentTheme === 'first') {
-      setTheme('second')
-      setButtonPosition('center')
-    } else if (currentTheme === 'second') {
-      setTheme('third')
-      setButtonPosition('right')
-    } else if (currentTheme === 'third') {
-      setTheme('first')
-      setButtonPosition('left')
-    }
-  }
+  const { theme, nextTheme } = useContext(CustomThemeContext) as CustomThemeContextValue
 
   return (
     <Container>
@@ -105,7 +88,7 @@ export default function ThemeSwitchButton() {
         <p>2</p>
         <p>3</p>
       </Number>
-      <Button $position={buttonPosition} onClick={() => nextTheme(theme)} />
+      <Button $position={theme} onClick={nextTheme} />
     </Container>
   )
 }

@@ -1,6 +1,7 @@
 import { createContext, useState, ReactNode, useMemo, useCallback, useEffect } from 'react'
 import { evaluate } from 'mathjs'
-import { Calcul, CalculContextValue } from '../types/types'
+import { CalculContextValue, Digit, Keys, Operator } from '../types/types'
+import keysList from '../keysList'
 
 export const CalculContext = createContext<CalculContextValue | null>(null)
 
@@ -9,166 +10,133 @@ type Props = {
 }
 
 export function CalculProvider({ children }: Props) {
-  const [calcul, updateCalcul] = useState<Calcul>({
-    expressionArr: [],
-    activeTerm: 0,
-    result: undefined,
-  })
+  const [activeTerm, setActiveTerm] = useState<string>('')
+  const [calcul, setCalcul] = useState<string[]>([])
+  const [result, setResult] = useState<string | null>(null)
+  const display = result || `${calcul.join(' ')} ${activeTerm}`
 
-  const { expressionArr, activeTerm, result } = calcul
-
-  const toDisplay = useCallback(() => {
-    if (expressionArr.length === 0) return undefined
-    if (result !== undefined) {
-      return result
-    }
-
-    return expressionArr.join(' ')
-  }, [expressionArr, result])
-
-  const handleReset = useCallback(() => {
-    updateCalcul({
-      expressionArr: [],
-      activeTerm: 0,
-      result: undefined,
-    })
+  const resetState = useCallback(() => {
+    setActiveTerm('')
+    setCalcul([])
+    setResult(null)
   }, [])
 
-  const handleDel = useCallback(() => {
-    if (expressionArr[0] === undefined) return
-    let newExpressionArr = [...expressionArr]
-    let newActiveTerm = activeTerm
-
-    let newResult = result
-
-    if (result !== undefined) {
-      newExpressionArr = []
-      newActiveTerm = 0
-      newResult = undefined
-    } else if (expressionArr.length <= 1 && expressionArr[0].toString().length <= 1) {
-      newExpressionArr = []
-    } else if (!newExpressionArr[activeTerm]) {
-      if (activeTerm >= 2) newActiveTerm -= 2
-      if (newExpressionArr[activeTerm] === '') newExpressionArr.pop()
-      newExpressionArr.pop()
-    } else {
-      newExpressionArr[activeTerm] = newExpressionArr[activeTerm].toString()
-      newExpressionArr[activeTerm] = newExpressionArr[activeTerm].slice(
-        0,
-        newExpressionArr[activeTerm].length - 1,
-      )
-    }
-
-    updateCalcul({
-      expressionArr: newExpressionArr,
-      activeTerm: newActiveTerm,
-      result: newResult,
-    })
-  }, [activeTerm, expressionArr, result])
-
-  const handleDigitAndPoint = useCallback(
-    (digit: number | '.') => {
-      let newExpressionArr = [...expressionArr]
-      let newResult = result
-      let newActiveTerm = activeTerm
-
-      if (result !== undefined) {
-        newExpressionArr = []
-        newResult = undefined
-        newActiveTerm = 0
+  const handleDigit = useCallback(
+    (digit: Digit) => {
+      if (result) {
+        resetState()
       }
-
-      if (digit === '.') {
-        if (newExpressionArr[newActiveTerm] === undefined) {
-          newExpressionArr.push('0.')
-        } else if (!newExpressionArr[newActiveTerm].includes('.')) {
-          newExpressionArr[newActiveTerm] += '.'
-        }
+      if (activeTerm === '0') {
+        setActiveTerm(digit)
+      } else {
+        setActiveTerm((prev) => prev + digit)
       }
-
-      if (typeof digit === 'number') {
-        if (newExpressionArr[newActiveTerm] === undefined) {
-          newExpressionArr.push(digit.toString())
-        } else if (newExpressionArr[newActiveTerm] === '0') {
-          newExpressionArr[newActiveTerm] = digit.toString()
-        } else {
-          newExpressionArr[newActiveTerm] += digit.toString()
-        }
-      }
-
-      updateCalcul({
-        ...calcul,
-        expressionArr: newExpressionArr,
-        activeTerm: newActiveTerm,
-        result: newResult,
-      })
     },
-    [activeTerm, calcul, expressionArr, result],
+    [result, resetState, activeTerm],
   )
+
+  const handlePoint = useCallback(() => {
+    if (activeTerm.includes('.')) return
+    if (activeTerm === '') {
+      setActiveTerm('0.')
+    } else {
+      setActiveTerm((prev) => `${prev}.`)
+    }
+  }, [activeTerm])
 
   const handleOperator = useCallback(
-    (oper: string) => {
-      let newExpressionArr = [...expressionArr]
-      let newResult = result
-      let newActiveTerm = activeTerm
-
-      if (result !== undefined) {
-        newExpressionArr = [result]
-        newResult = undefined
-        newActiveTerm = 0
+    (operator: Operator) => {
+      if (result === '∞') return
+      const termToPush = result?.replaceAll(',', '') || activeTerm
+      if (termToPush === '') return
+      if (result) {
+        resetState()
       }
 
-      if (expressionArr.length % 2 === 0) return
+      // Format string to number standard keeping string type
+      const numberTerm = Number(termToPush)
+      const stringTerm = numberTerm.toLocaleString('en-US')
 
-      console.log(typeof newExpressionArr)
-
-      newExpressionArr[newActiveTerm] = parseFloat(newExpressionArr[newActiveTerm])
-      newExpressionArr.push(oper)
-
-      updateCalcul({
-        ...calcul,
-        activeTerm: newActiveTerm + 2,
-        expressionArr: newExpressionArr,
-        result: newResult,
-      })
+      setCalcul((prev) => [...prev, stringTerm, operator])
+      setActiveTerm('')
     },
-    [activeTerm, calcul, expressionArr, result],
+    [activeTerm, result, resetState],
   )
 
-  const handleEqual = useCallback(() => {
-    const newExpressionArr = [...expressionArr]
-    if (newExpressionArr[activeTerm] === undefined) {
-      newExpressionArr.pop()
+  const handleDel = useCallback(() => {
+    if (activeTerm === '' && calcul.length === 0) return
+    if (activeTerm === '') {
+      setActiveTerm(calcul[calcul.length - 2])
+      setCalcul((prev) => prev.slice(0, -2))
+    } else {
+      setActiveTerm((prev) => prev.slice(0, -1))
     }
-    const expression = newExpressionArr.join(' ').replaceAll('x', '*')
-    updateCalcul({ ...calcul, result: evaluate(expression) })
-  }, [activeTerm, calcul, expressionArr])
+  }, [activeTerm, calcul])
+
+  const handleEqual = useCallback(() => {
+    if (calcul.length === 0) return
+
+    const strCalcul = calcul.join('').replaceAll('x', '*').replaceAll(',', '')
+    const expression = activeTerm === '' ? strCalcul.slice(0, -1) : strCalcul + activeTerm // If activeTerm is empty last member of calcul is an operator because calcul isn't empty
+
+    const evaluation = evaluate(expression)
+    const strEval = typeof evaluation === 'number' ? evaluation.toLocaleString('en-US') : evaluation
+
+    if (typeof strEval === 'string') {
+      setResult(strEval)
+    }
+  }, [activeTerm, calcul])
+
+  const handleKey = useCallback(
+    (keyContent: Keys) => {
+      switch (keyContent) {
+        case 'RESET':
+          resetState()
+          break
+        case 'DEL':
+          handleDel()
+          break
+        case '=':
+          handleEqual()
+          break
+        case '.':
+          handlePoint()
+          break
+        case '+':
+        case '-':
+        case '/':
+        case 'x':
+          handleOperator(keyContent)
+          break
+        default:
+          handleDigit(keyContent)
+          break
+      }
+    },
+    [resetState, handleDel, handleEqual, handlePoint, handleOperator, handleDigit],
+  )
 
   useEffect(() => {
-    console.log(result)
-  }, [result])
+    function handleKeyDown(e: KeyboardEvent) {
+      keysList.forEach(({ onKeyboard, content }) => {
+        if (e.key === onKeyboard) {
+          handleKey(content)
+        }
+      })
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [handleKey])
 
   const contextValue = useMemo(
     () => ({
-      calcul,
-      updateCalcul,
-      toDisplay,
-      handleReset,
-      handleDel,
-      handleDigitAndPoint,
-      handleOperator,
-      handleEqual,
+      display,
+      handleKey,
     }),
-    [
-      calcul,
-      updateCalcul,
-      toDisplay,
-      handleReset,
-      handleDel,
-      handleDigitAndPoint,
-      handleOperator,
-      handleEqual,
-    ],
+    [display, handleKey],
   )
 
   return <CalculContext.Provider value={contextValue}>{children}</CalculContext.Provider>

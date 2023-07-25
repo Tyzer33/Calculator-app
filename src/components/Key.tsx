@@ -1,18 +1,14 @@
-import styled, { css } from 'styled-components'
 import { useContext } from 'react'
+import styled, { css } from 'styled-components'
 import { CalculContext } from '../context/CalculContext'
 import { tabletLandscape } from '../styles/breakpoints'
-import { CalculContextValue } from '../types/types'
-
-// TODO: créer un type Key qui accepte que les key de la calculette
-type Keys = string | number
-type Type = 'primary' | 'secondary' | 'tertiary'
-type Size = 1 | 2
+import { CalculContextValue, Keys, Size, Type } from '../types/types'
 
 type StyledKeyProps = {
   $size: Size
   $type: Type
 }
+
 const StyledKey = styled.button<StyledKeyProps>`
   display: flex;
   justify-content: center;
@@ -86,26 +82,10 @@ type Props = {
 }
 
 export default function Key({ content, type, size }: Props) {
-  const { handleReset, handleDel, handleDigitAndPoint, handleOperator, handleEqual } = useContext(
-    CalculContext,
-  ) as CalculContextValue
-
-  function handleClick(keyContent: Keys) {
-    if (keyContent === 'RESET') {
-      handleReset()
-    } else if (keyContent === 'DEL') {
-      handleDel()
-    } else if (keyContent === '=') {
-      handleEqual()
-    } else if (typeof keyContent === 'number' || keyContent === '.') {
-      handleDigitAndPoint(keyContent)
-    } else {
-      handleOperator(keyContent)
-    }
-  }
+  const { handleKey } = useContext(CalculContext) as CalculContextValue
 
   return (
-    <StyledKey $type={type} $size={size} onClick={() => handleClick(content)}>
+    <StyledKey $type={type} $size={size} onClick={() => handleKey(content)}>
       {content}
     </StyledKey>
   )
